@@ -1,0 +1,62 @@
+{
+  "name": "polling-observer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A new way of running polling function with observer pattern",
+  "keywords": [
+    "polling-observer",
+    "node",
+    "typescript"
+  ],
+  "homepage": "https://github.com/reallyland/polling-observer",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:reallyland/polling-observer.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Rong Sen Ng (motss)",
+    "email": "wes.ngrongsen@gmail.com",
+    "url": "https://github.com/motss"
+  },
+  "files": [
+    "dist/*.*js.map",
+    "dist/*.*js",
+    "dist/*.d.ts.map",
+    "dist/*.d.ts"
+  ],
+  "main": "dist/index",
+  "module": "dist/index.mjs",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "build": "npm run clean && npm run rollup",
+    "clean": "rm -rf dist/",
+    "demo": "node -r esm ./dist/demo",
+    "lint": "tslint --project tsconfig.json --config tslint.prod.json --format stylish",
+    "lint:debug": "tslint --project tsconfig.json --config tslint.json --format stylish",
+    "prepublishOnly": "npm run lint && npm run build",
+    "rollup": "rollup -c ./rollup.config.js",
+    "ts": "npm run clean && tsc",
+    "watch": "npm run ts -- --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@reallyland/tslint-config": "^1.0.0",
+    "@types/node": "^12.0.0",
+    "esm": "^3.2.22",
+    "rollup": "^1.10.1",
+    "rollup-plugin-filesize": "^6.0.1",
+    "rollup-plugin-terser": "^4.0.4",
+    "rollup-plugin-tslint": "^0.2.2",
+    "rollup-plugin-typescript2": "^0.21.0",
+    "tslint": "^5.16.0",
+    "typescript": "^3.4.5"
+  },
+  "engines": {
+    "node": ">= 8.16.0",
+    "npm": ">= 6.4.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,11 +1,11 @@
 import { hasWindow } from './has-window.js';
 
-export async function delayUntil(delay?: number) {
+export async function delayUntil(delay: number = 0) {
   return new Promise((yay, nah) => {
     try {
       const delayNum = 'number' === typeof(delay) ? +delay : 0;
 
-      if (delayNum > 0) yay();
+      if (delayNum < 1) yay();
       else hasWindow() ? setTimeout(yay) : setImmediate(yay);
     } catch (e) {
       nah(e);

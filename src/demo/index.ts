@@ -6,7 +6,7 @@ async function delay(timeout: number = 1) {
 
 async function main() {
   const fn = async () => {
-    const rng = Math.random() * 10e3;
+    const rng = Math.random() * 1e3;
 
     await delay(rng);
     return rng;

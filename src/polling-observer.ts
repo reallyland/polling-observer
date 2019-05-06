@@ -1,3 +1,4 @@
+import { delayUntil } from './delay-until.js';
 import { globalPerformance } from './global-performance.js';
 import { PollingMeasure } from './polling-entry.js';
 
@@ -33,11 +34,15 @@ export class PollingObserver<T> {
   }
 
   public async observe(fn: PollingFunctionType<T>, options: PollingObserverOptions) {
+    /**
+     * NOTE(motss): To ensure `this._forceStop` is always reset before start observing.
+     */
     this._forceStop = false;
 
     const { interval, timeout }: PollingObserverOptions = options || {};
+    const isValidInterval = 'number' === typeof(interval) && interval > 0;
     const obsTimeout = 'number' === typeof(timeout) ? +timeout : -1;
-    const obsInterval = 'number' === typeof(interval) && interval >= 0 ? +interval : -1;
+    const obsInterval = isValidInterval ? +interval! : -1;
 
     const perf = await globalPerformance();
     const isInfinitePolling = obsTimeout < 1;
@@ -70,14 +75,14 @@ export class PollingObserver<T> {
       data = isPromise(r) ? await r : r;
       const endAt = perf.now();
       const duration = endAt - startAt;
-      const timeLeft = obsInterval - duration;
+      const timeLeft = isValidInterval ? obsInterval - duration : 0;
 
       this._records.push(new PollingMeasure(`polling:${i}`, duration, startAt));
 
       totalTime += (duration > obsInterval ? duration : obsInterval);
       i += 1;
 
-      if (timeLeft > 0) await new Promise(yay => setTimeout(yay, timeLeft));
+      if (timeLeft > 0) await delayUntil(timeLeft);
     }
   }
 

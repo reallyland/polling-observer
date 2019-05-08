@@ -13,14 +13,14 @@ type ConditionCallback<T> = (
   records: PollingObserver<T>['_records'],
   object: PollingObserver<T>
 ) => boolean | Promise<boolean>;
-type OnFinishCallback<T> = (...data: Parameters<ConditionCallback<T>>) => unknown;
+type OnfinishCallback<T> = (...data: Parameters<ConditionCallback<T>>) => unknown;
 
 function isPromise<T>(r: T | Promise<T>): r is Promise<T> {
   return 'function' === typeof((r as Promise<T>).then);
 }
 
 export class PollingObserver<T> {
-  public onfinish?: OnFinishCallback<T>;
+  public onfinish?: OnfinishCallback<T>;
 
   private _forceStop: boolean = false;
   private _records: PollingMeasure[] = [];

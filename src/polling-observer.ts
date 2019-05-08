@@ -92,3 +92,5 @@ export class PollingObserver<T> {
 }
 
 export default PollingObserver;
+
+// TODO: To add `pollingfinish` event when polling completes

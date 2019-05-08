@@ -18,8 +18,8 @@ async function main() {
     console.log('polling...', n, records, obj);
 
     // return 'number' === typeof(n) && n >= 9990;
-    // return 'number' === typeof(n) && n >= 100;
-    return false;
+    return 'number' === typeof(n) && n >= 100;
+    // return false;
   });
 
   console.log('pollingobserver', d);
@@ -31,13 +31,7 @@ async function main() {
   }, 1e3));
   console.info(msg);
 
-  // while (true) {
-  //   const rs = d.takeRecords();
-
-  //   console.info(rs, r, rs && rs[0] && rs[0].toJSON());
-
-  //   await delay(2e3);
-  // }
+  d.onfinish = (...args) => console.log('onfinish', args);
 }
 
 main().then(console.log).catch(console.error);

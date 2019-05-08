@@ -6,22 +6,26 @@ interface PollingObserverOptions {
   timeout?: number;
   interval?: number;
 }
-type PollingFunctionType<T> = () => T | Promise<T>;
-type ConditionCallbackType<T> = (
-  data: T | null | undefined,
+type PollingData<T> = T | null | undefined;
+type PollingFunction<T> = () => T | Promise<T>;
+type ConditionCallback<T> = (
+  data: PollingData<T>,
   records: PollingObserver<T>['_records'],
   object: PollingObserver<T>
 ) => boolean | Promise<boolean>;
+type OnFinishCallback<T> = (...data: Parameters<ConditionCallback<T>>) => unknown;
 
 function isPromise<T>(r: T | Promise<T>): r is Promise<T> {
   return 'function' === typeof((r as Promise<T>).then);
 }
 
 export class PollingObserver<T> {
+  public onfinish?: OnFinishCallback<T>;
+
   private _forceStop: boolean = false;
   private _records: PollingMeasure[] = [];
 
-  constructor(public conditionCallback: ConditionCallbackType<T>) {
+  constructor(public conditionCallback: ConditionCallback<T>) {
     if ('function' !== typeof(conditionCallback)) {
       throw new TypeError(
         `Expected 'conditionCallback' to be expected, but received ${conditionCallback}`);
@@ -33,7 +37,7 @@ export class PollingObserver<T> {
     this._records = [];
   }
 
-  public async observe(fn: PollingFunctionType<T>, options: PollingObserverOptions) {
+  public async observe(fn: PollingFunction<T>, options: PollingObserverOptions) {
     /**
      * NOTE(motss): To ensure `this._forceStop` is always reset before start observing.
      */
@@ -46,9 +50,11 @@ export class PollingObserver<T> {
 
     const perf = await globalPerformance();
     const isInfinitePolling = obsTimeout < 1;
+    const records = this._records;
+    const onfinishCallback = this.onfinish;
 
     let totalTime = 0;
-    let data: T | undefined = void 0;
+    let data: PollingData<T> = void 0;
     let i = 0;
 
     polling: while (true) {
@@ -57,7 +63,7 @@ export class PollingObserver<T> {
         break polling;
       }
 
-      const conditionResult = this.conditionCallback(data, this._records, this);
+      const conditionResult = this.conditionCallback(data, records, this);
       const didConditionMeet = isPromise(conditionResult) ?
         await conditionResult : conditionResult;
       const didTimeout = isInfinitePolling ? false : totalTime >= obsTimeout;
@@ -84,6 +90,8 @@ export class PollingObserver<T> {
 
       if (timeLeft > 0) await delayUntil(timeLeft);
     }
+
+    if ('function' === typeof(onfinishCallback)) onfinishCallback(data, this._records, this);
   }
 
   public takeRecords() {
@@ -92,5 +100,3 @@ export class PollingObserver<T> {
 }
 
 export default PollingObserver;
-
-// TODO: To add `pollingfinish` event when polling completes

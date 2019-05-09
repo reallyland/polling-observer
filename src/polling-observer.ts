@@ -2,18 +2,32 @@ import { delayUntil } from './delay-until.js';
 import { globalPerformance } from './global-performance.js';
 import { PollingMeasure } from './polling-entry.js';
 
-interface PollingObserverOptions {
+export interface PollingObserverOptions {
   timeout?: number;
   interval?: number;
 }
-type PollingData<T> = T | null | undefined;
+type PollingValue<T> = T | null | undefined;
 type PollingFunction<T> = () => T | Promise<T>;
 type ConditionCallback<T> = (
-  data: PollingData<T>,
+  data: PollingValue<T>,
   records: PollingObserver<T>['_records'],
   object: PollingObserver<T>
 ) => boolean | Promise<boolean>;
-type OnfinishCallback<T> = (...data: Parameters<ConditionCallback<T>>) => unknown;
+
+export interface OnfinishFulfilled<T> {
+  status: 'finish' | 'timeout';
+  value: PollingValue<T>;
+}
+export interface OnfinishRejected {
+  status: 'error';
+  reason: Error;
+}
+export type OnfinishValue<T> = OnfinishFulfilled<T> | OnfinishRejected;
+type OnfinishCallback<T> = (
+  value: OnfinishValue<T>,
+  records: PollingObserver<T>['_records'],
+  object: PollingObserver<T>
+) => unknown;
 
 function isPromise<T>(r: T | Promise<T>): r is Promise<T> {
   return 'function' === typeof((r as Promise<T>).then);
@@ -27,8 +41,7 @@ export class PollingObserver<T> {
 
   constructor(public conditionCallback: ConditionCallback<T>) {
     if ('function' !== typeof(conditionCallback)) {
-      throw new TypeError(
-        `Expected 'conditionCallback' to be expected, but received ${conditionCallback}`);
+      throw new TypeError(`'conditionCallback' is not defined`);
     }
   }
 
@@ -54,44 +67,50 @@ export class PollingObserver<T> {
     const onfinishCallback = this.onfinish;
 
     let totalTime = 0;
-    let data: PollingData<T> = void 0;
+    let value: PollingValue<T> = void 0;
     let i = 0;
+    let status: OnfinishFulfilled<T>['status'] = 'finish';
+    let result: OnfinishValue<T> = {} as any;
 
-    polling: while (true) {
-      if (this._forceStop) {
-        this._forceStop = false;
-        break polling;
+    try {
+      polling: while (true) {
+        if (this._forceStop) {
+          this._forceStop = false;
+          break polling;
+        }
+
+        const conditionResult = this.conditionCallback(value, records, this);
+        const didConditionMeet = isPromise(conditionResult) ?
+          await conditionResult : conditionResult;
+        const didTimeout = isInfinitePolling ? false : totalTime >= obsTimeout;
+
+        if (didTimeout || didConditionMeet) {
+          status = didTimeout ? 'timeout' : status;
+          this._forceStop = false;
+          break polling;
+        }
+
+        const startAt = perf.now();
+        const r = fn();
+        value = isPromise(r) ? await r : r;
+        const endAt = perf.now();
+        const duration = endAt - startAt;
+        const timeLeft = isValidInterval ? obsInterval - duration : 0;
+
+        this._records.push(new PollingMeasure(`polling:${i}`, duration, startAt));
+
+        totalTime += (duration > obsInterval ? duration : obsInterval);
+        i += 1;
+
+        if (timeLeft > 0) await delayUntil(timeLeft);
       }
 
-      const conditionResult = this.conditionCallback(data, records, this);
-      const didConditionMeet = isPromise(conditionResult) ?
-        await conditionResult : conditionResult;
-      const didTimeout = isInfinitePolling ? false : totalTime >= obsTimeout;
-
-      if (didTimeout || didConditionMeet) {
-        if (didConditionMeet) console.log('stop after condition met');
-        if (didTimeout) console.log('stop after timeout reached');
-
-        this._forceStop = false;
-        break polling;
-      }
-
-      const startAt = perf.now();
-      const r = fn();
-      data = isPromise(r) ? await r : r;
-      const endAt = perf.now();
-      const duration = endAt - startAt;
-      const timeLeft = isValidInterval ? obsInterval - duration : 0;
-
-      this._records.push(new PollingMeasure(`polling:${i}`, duration, startAt));
-
-      totalTime += (duration > obsInterval ? duration : obsInterval);
-      i += 1;
-
-      if (timeLeft > 0) await delayUntil(timeLeft);
+      result = { status, value };
+    } catch (e) {
+      result = { status: 'error', reason: e };
+    } finally {
+      if ('function' === typeof(onfinishCallback)) onfinishCallback(result, this._records, this);
     }
-
-    if ('function' === typeof(onfinishCallback)) onfinishCallback(data, this._records, this);
   }
 
   public takeRecords() {

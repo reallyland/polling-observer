@@ -13,12 +13,14 @@ async function main() {
   };
   // const opts = { interval: 1e3, timeout: 30e3 };
   // const opts = { interval: 1e3, timeout: -59e3 };
-  const opts = { interval: 1e3 };
+  const opts = { interval: 1e3, timeout: 3e3 };
   const d = new PollingObserver<number>((n, records, obj) => {
     console.log('polling...', n, records, obj);
 
-    // return 'number' === typeof(n) && n >= 9990;
-    return 'number' === typeof(n) && n >= 100;
+    if (n && n > 100) { throw new Error('haha'); }
+
+    return 'number' === typeof(n) && n >= 9990;
+    // return 'number' === typeof(n) && n >= 100;
     // return false;
   });
 

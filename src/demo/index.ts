@@ -17,10 +17,10 @@ async function main() {
   const d = new PollingObserver<number>((n, records, obj) => {
     console.log('polling...', n, records, obj);
 
-    if (n && n > 100) { throw new Error('haha'); }
+    // if (n && n > 100) { throw new Error('haha'); }
 
-    return 'number' === typeof(n) && n >= 9990;
-    // return 'number' === typeof(n) && n >= 100;
+    // return 'number' === typeof(n) && n >= 9990;
+    return 'number' === typeof(n) && n >= 100;
     // return false;
   });
 

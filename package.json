@@ -4,8 +4,8 @@
   "private": true,
   "description": "A new way of running polling function with observer pattern",
   "keywords": [
-    "polling-observer",
     "node",
+    "polling-observer",
     "typescript"
   ],
   "homepage": "https://github.com/reallyland/polling-observer",
@@ -30,25 +30,31 @@
   "typings": "dist/index.d.ts",
   "scripts": {
     "build": "npm run clean && npm run rollup",
-    "clean": "rm -rf dist/",
+    "build:test": "npm run clean && tsc -p ./tsconfig.test.json",
+    "clean": "shx rm -rf dist/",
     "demo": "node -r esm ./dist/demo",
     "lint": "tslint --project tsconfig.json --config tslint.prod.json --format stylish",
     "lint:debug": "tslint --project tsconfig.json --config tslint.json --format stylish",
     "prepublishOnly": "npm run lint && npm run build",
     "rollup": "rollup -c ./rollup.config.js",
+    "test": "npm run lint && npm run build:test && npm run jest",
+    "jest": "jest --config ./.jestrc.json",
     "ts": "npm run clean && tsc",
     "watch": "npm run ts -- --watch"
   },
   "dependencies": {},
   "devDependencies": {
     "@reallyland/tslint-config": "^1.0.0",
+    "@types/jest": "^24.0.12",
     "@types/node": "^12.0.0",
     "esm": "^3.2.22",
+    "jest": "^24.8.0",
     "rollup": "^1.11.3",
     "rollup-plugin-filesize": "^6.0.1",
     "rollup-plugin-terser": "^4.0.4",
     "rollup-plugin-tslint": "^0.2.2",
     "rollup-plugin-typescript2": "^0.21.0",
+    "shx": "^0.3.2",
     "tslint": "^5.16.0",
     "typescript": "^3.4.5"
   },

@@ -5,7 +5,11 @@
   "description": "A new way of running polling function with observer pattern",
   "keywords": [
     "node",
+    "polling",
     "polling-observer",
+    "pollingobserver",
+    "really",
+    "reallyland",
     "typescript"
   ],
   "homepage": "https://github.com/reallyland/polling-observer",
@@ -33,12 +37,12 @@
     "build:test": "npm run clean && tsc -p ./tsconfig.test.json",
     "clean": "shx rm -rf dist/",
     "demo": "node -r esm ./dist/demo",
+    "jest": "jest --config ./.jestrc.json",
     "lint": "tslint --project tsconfig.json --config tslint.prod.json --format stylish",
     "lint:debug": "tslint --project tsconfig.json --config tslint.json --format stylish",
     "prepublishOnly": "npm run lint && npm run build",
     "rollup": "rollup -c ./rollup.config.js",
     "test": "npm run lint && npm run build:test && npm run jest",
-    "jest": "jest --config ./.jestrc.json",
     "ts": "npm run clean && tsc",
     "watch": "npm run ts -- --watch"
   },

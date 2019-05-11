@@ -1,22 +1,21 @@
 import { delayUntil } from './delay-until.js';
 import { globalPerformance } from './global-performance.js';
-import { PollingMeasure } from './polling-entry.js';
+import { PollingMeasure } from './polling-measure.js';
 
 export interface PollingObserverOptions {
   timeout?: number;
   interval?: number;
 }
-type PollingValue<T> = T | null | undefined;
 type PollingFunction<T> = () => T | Promise<T>;
 type ConditionCallback<T> = (
-  data: PollingValue<T>,
+  data: T | null | undefined,
   records: PollingObserver<T>['_records'],
   object: PollingObserver<T>
 ) => boolean | Promise<boolean>;
 
 export interface OnfinishFulfilled<T> {
   status: 'finish' | 'timeout';
-  value: PollingValue<T>;
+  value: T | null | undefined;
 }
 export interface OnfinishRejected {
   status: 'error';
@@ -38,6 +37,7 @@ export class PollingObserver<T> {
 
   private _forceStop: boolean = false;
   private _records: PollingMeasure[] = [];
+  private _isPolling: boolean = false;
 
   constructor(public conditionCallback: ConditionCallback<T>) {
     if ('function' !== typeof(conditionCallback)) {
@@ -47,7 +47,8 @@ export class PollingObserver<T> {
 
   public disconnect() {
     this._forceStop = true;
-    this._records = [];
+
+    if (!this._isPolling) this._records = [];
   }
 
   public async observe(fn: PollingFunction<T>, options: PollingObserverOptions) {
@@ -65,28 +66,28 @@ export class PollingObserver<T> {
     const isInfinitePolling = obsTimeout < 1;
     const records = this._records;
     const onfinishCallback = this.onfinish;
+    const conditionCallback = this.conditionCallback;
 
     let totalTime = 0;
-    let value: PollingValue<T> = void 0;
+    let value: T | null | undefined = void 0;
     let i = 0;
     let status: OnfinishFulfilled<T>['status'] = 'finish';
     let result: OnfinishValue<T> = {} as any;
 
     try {
       polling: while (true) {
-        if (this._forceStop) {
-          this._forceStop = false;
-          break polling;
-        }
+        if (this._forceStop) break polling;
 
-        const conditionResult = this.conditionCallback(value, records, this);
+        /** NOTE(motss): Set to indicate polling initiates */
+        this._isPolling = true;
+
+        const conditionResult = conditionCallback(value, records, this);
         const didConditionMeet = isPromise(conditionResult) ?
           await conditionResult : conditionResult;
         const didTimeout = isInfinitePolling ? false : totalTime >= obsTimeout;
 
         if (didTimeout || didConditionMeet) {
           status = didTimeout ? 'timeout' : status;
-          this._forceStop = false;
           break polling;
         }
 
@@ -109,7 +110,14 @@ export class PollingObserver<T> {
     } catch (e) {
       result = { status: 'error', reason: e };
     } finally {
-      if ('function' === typeof(onfinishCallback)) onfinishCallback(result, this._records, this);
+      /** NOTE(motss): Reset flags */
+      this._isPolling = this._forceStop = false;
+
+      if ('function' === typeof(onfinishCallback)) {
+        onfinishCallback(result, this._records.slice(), this);
+      }
+
+      this._records = [];
     }
   }
 

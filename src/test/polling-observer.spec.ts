@@ -104,11 +104,18 @@ describe('polling-observer', () => {
         },
         { interval: 1e3, timeout: 5e3 });
 
-      obs.onfinish = (d) => {
+      obs.onfinish = (d, records) => {
         const { status, value } = d as OnfinishFulfilled<MockData>;
 
         expect(status).toStrictEqual('timeout');
         expect(value).toStrictEqual({ ...data });
+        expect(records.length).toBeGreaterThan(1);
+        expect(records[0].toJSON()).toMatchObject({
+          duration: expect.any(Number),
+          entryType: expect.stringMatching('polling-measure'),
+          name: expect.stringMatching(/^polling:\d+/gi),
+          startTime: expect.any(Number),
+        } as PollingMeasure);
         expect(obs.takeRecords().length).toBeGreaterThan(1);
         expect(obs.takeRecords()[0].toJSON()).toMatchObject({
           duration: expect.any(Number),
@@ -129,11 +136,12 @@ describe('polling-observer', () => {
         },
         { interval: 1e3, timeout: 5e3 });
 
-      obs.onfinish = (d) => {
+      obs.onfinish = (d, records) => {
         const { status, value } = d as OnfinishFulfilled<MockData>;
 
         expect(status).toStrictEqual('timeout');
         expect(value).toStrictEqual({ ...data });
+        expect(records.length).toBeGreaterThan(1);
         expect(obs.takeRecords().length).toBeGreaterThan(1);
 
         obs.disconnect();
@@ -143,7 +151,7 @@ describe('polling-observer', () => {
       };
     }, 10e3);
 
-    it(`forces polling to stop by disconnecting the observer`, async (done) => {
+    it(`forces polling to stop by disconnecting the observer`, (done) => {
       const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
       const obs = new PollingObserver<MockData>(() => {
         /**
@@ -159,17 +167,18 @@ describe('polling-observer', () => {
         },
         { interval: 2e3, timeout: 5e3 });
 
-      obs.onfinish = (d) => {
+      obs.onfinish = (d, records) => {
         const { status, value } = d as OnfinishFulfilled<MockData>;
 
         expect(status).toStrictEqual('finish');
         expect(value).toStrictEqual({ ...data });
-        expect(obs.takeRecords().length).toStrictEqual(1);
+        expect(records.length).toStrictEqual(1);
+        expect(obs.takeRecords().length).toStrictEqual(0);
         done();
       };
     }, 10e3);
 
-    it(`disconnects observer before first polling initiates`, async (done) => {
+    it(`disconnects observer before first polling initiates`, (done) => {
       const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
       const obs = new PollingObserver<MockData>(() => false);
 
@@ -179,11 +188,12 @@ describe('polling-observer', () => {
         },
         { interval: 2e3, timeout: 5e3 });
 
-      obs.onfinish = (d) => {
+      obs.onfinish = (d, records) => {
         const { status, value } = d as OnfinishFulfilled<MockData>;
 
         expect(status).toStrictEqual('finish');
         expect(value).toStrictEqual(undefined!);
+        expect(records).toStrictEqual([]);
         expect(obs.takeRecords()).toStrictEqual([]);
         done();
       };
@@ -191,7 +201,176 @@ describe('polling-observer', () => {
       obs.disconnect();
     }, 10e3);
 
-    // TODO: To restart disconnected observer
+    it(`re-observes after disconnected`, async (done) => {
+      const getMockData = (): MockData => ({ items: [Math.floor(Math.random() * Math.PI)] });
+      const pollingFn = (d: MockData) => async () => {
+        return new Promise<MockData>(yay => setTimeout(() => yay(d), 1));
+      };
+
+      const obs = new PollingObserver<MockData>(() => false);
+      const pollingOpts = { interval: 2e3, timeout: 5e3 };
+      const mockData = getMockData();
+
+      obs.observe(pollingFn(mockData), pollingOpts);
+
+      await new Promise((yay) => {
+        obs.onfinish = (d, records) => {
+          const { status, value } = d as OnfinishFulfilled<MockData>;
+
+          expect(status).toStrictEqual('timeout');
+          expect(value).toStrictEqual({ ...mockData });
+          expect(records.length).toBeGreaterThan(1);
+          expect(obs.takeRecords().length).toBeGreaterThan(1);
+          yay();
+        };
+      });
+
+      obs.disconnect();
+      expect(obs.takeRecords().length).toBeLessThan(1);
+
+      const mockData2 = getMockData();
+      obs.observe(pollingFn(mockData2), pollingOpts);
+
+      await new Promise((yay) => {
+        obs.onfinish = (d, records) => {
+          const { status, value } = d as OnfinishFulfilled<MockData>;
+
+          expect(status).toStrictEqual('timeout');
+          expect(value).toStrictEqual({ ...mockData2 });
+          expect(records.length).toBeGreaterThan(1);
+          expect(obs.takeRecords().length).toBeGreaterThan(1);
+          yay();
+        };
+      });
+
+      done();
+    }, 10e3);
+
+  });
+
+  describe('misc', () => {
+    it(`polls with optional 'interval'`, (done) => {
+      const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
+      const obs = new PollingObserver<MockData>(() => false);
+
+      obs.observe(
+        async () => {
+          return new Promise<MockData>(yay => setTimeout(() => yay(data), 1));
+        },
+        { timeout: 5e3 });
+
+      obs.onfinish = (d) => {
+        const { status, value } = d as OnfinishFulfilled<MockData>;
+
+        expect(status).toStrictEqual('timeout');
+        expect(value).toStrictEqual({ ...data });
+        expect(obs.takeRecords().length).toBeGreaterThan(1);
+        done();
+      };
+    }, 10e3);
+
+    it(`polls with optional 'timeout'`, (done) => {
+      const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
+      const startsAt = +new Date();
+      const obs = new PollingObserver<MockData>(() => {
+        /** NOTE(motss): It still needs to be stopped to pass the test */
+        const endsAt = +new Date();
+        return Math.floor(endsAt - startsAt) > 5e3;
+      });
+
+      obs.observe(
+        async () => {
+          return new Promise<MockData>(yay => setTimeout(() => yay(data), 1));
+        },
+        { interval: 2e3 });
+
+      obs.onfinish = (d, records) => {
+        const { status, value } = d as OnfinishFulfilled<MockData>;
+
+        expect(status).toStrictEqual('finish');
+        expect(value).toStrictEqual({ ...data });
+        expect(records.length).toBeGreaterThan(1);
+        expect(obs.takeRecords().length).toBeGreaterThan(1);
+        done();
+      };
+    }, 10e3);
+
+    it(`polls with optional 'options'`, (done) => {
+      const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
+      const startsAt = +new Date();
+      const obs = new PollingObserver<MockData>(() => {
+        /** NOTE(motss): It still needs to be stopped to pass the test */
+        const endsAt = +new Date();
+        return Math.floor(endsAt - startsAt) > 5e3;
+      });
+
+      obs.observe(
+        async () => {
+          return new Promise<MockData>(yay => setTimeout(() => yay(data), 1));
+        });
+
+      obs.onfinish = (d, records) => {
+        const { status, value } = d as OnfinishFulfilled<MockData>;
+
+        expect(status).toStrictEqual('finish');
+        expect(value).toStrictEqual({ ...data });
+        expect(records.length).toBeGreaterThan(1);
+        expect(obs.takeRecords().length).toBeGreaterThan(1);
+        done();
+      };
+    }, 10e3);
+
+    it(`polls with async 'conditionCallback'`, (done) => {
+      const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
+      const obs = new PollingObserver<MockData>(async () => false);
+
+      obs.observe(
+        async () => {
+          return new Promise<MockData>(yay => setTimeout(() => yay(data), 1));
+        },
+        { interval: 2e3, timeout: 5e3 });
+
+      obs.onfinish = (d, records) => {
+        const { status, value } = d as OnfinishFulfilled<MockData>;
+
+        expect(status).toStrictEqual('timeout');
+        expect(value).toStrictEqual({ ...data });
+        expect(records.length).toBeGreaterThan(1);
+        expect(obs.takeRecords().length).toBeGreaterThan(1);
+        done();
+      };
+    }, 10e3);
+
+    it(`polls with non-async 'callback'`, (done) => {
+      const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
+      const obs = new PollingObserver<MockData>(async () => false);
+
+      obs.observe(() => data, { interval: 2e3, timeout: 5e3 });
+
+      obs.onfinish = (d, records) => {
+        const { status, value } = d as OnfinishFulfilled<MockData>;
+
+        expect(status).toStrictEqual('timeout');
+        expect(value).toStrictEqual({ ...data });
+        expect(records.length).toBeGreaterThan(1);
+        expect(obs.takeRecords().length).toBeGreaterThan(1);
+        done();
+      };
+    }, 10e3);
+
+    it(`polls without 'onfinish' callback`, (done) => {
+      const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
+      const obs = new PollingObserver<MockData>(async () => false);
+
+      setTimeout(() => {
+        expect(obs.takeRecords().length).toBeGreaterThan(1);
+        done();
+      }, 5e3);
+
+      obs.observe(() => data, { interval: 2e3, timeout: 5e3 });
+
+      expect(obs.takeRecords().length).toBeLessThan(1);
+    }, 10e3);
 
   });
 

@@ -6,7 +6,7 @@ export interface PollingObserverOptions {
   timeout?: number;
   interval?: number;
 }
-type PollingFunction<T> = () => T | Promise<T>;
+type PollingCallback<T> = () => T | Promise<T>;
 type ConditionCallback<T> = (
   data: T | null | undefined,
   records: PollingObserver<T>['_records'],
@@ -51,7 +51,7 @@ export class PollingObserver<T> {
     if (!this._isPolling) this._records = [];
   }
 
-  public async observe(fn: PollingFunction<T>, options: PollingObserverOptions) {
+  public async observe(callback: PollingCallback<T>, options?: PollingObserverOptions) {
     /**
      * NOTE(motss): To ensure `this._forceStop` is always reset before start observing.
      */
@@ -92,13 +92,13 @@ export class PollingObserver<T> {
         }
 
         const startAt = perf.now();
-        const r = fn();
+        const r = callback();
         value = isPromise(r) ? await r : r;
         const endAt = perf.now();
         const duration = endAt - startAt;
         const timeLeft = isValidInterval ? obsInterval - duration : 0;
 
-        this._records.push(new PollingMeasure(`polling:${i}`, duration, startAt));
+        records.push(new PollingMeasure(`polling:${i}`, duration, startAt));
 
         totalTime += (duration > obsInterval ? duration : obsInterval);
         i += 1;
@@ -110,14 +110,16 @@ export class PollingObserver<T> {
     } catch (e) {
       result = { status: 'error', reason: e };
     } finally {
+      const recordsSlice = records.slice();
+
+      if (this._forceStop) this._records = [];
+
       /** NOTE(motss): Reset flags */
       this._isPolling = this._forceStop = false;
 
       if ('function' === typeof(onfinishCallback)) {
-        onfinishCallback(result, this._records.slice(), this);
+        onfinishCallback(result, recordsSlice, this);
       }
-
-      this._records = [];
     }
   }
 

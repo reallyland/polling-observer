@@ -275,11 +275,11 @@ interface PollingMeasure {
 ### PollingObserver&lt;T&gt;
 
 - `conditionCallback` <[Function][function-mdn-url]> Condition callback to be executed in each polling and return the condition result in the type of boolean, e.g. return `true` to stop next poll.
-  - `data` <`T`> Polling data returned by `callback` in the type of `T` which defined in the `.observer()` method.
+  - `data` <`T`> Polling data returned by `callback` in the type of `T` which defined in the [PollingObserver.observe()] method.
   - `entries` <[PollingMeasure]> [PollingMeasure] object encapsulates a single polling metric of each polling.
-  - `observer` <[PolingObserver]> Created `PollingObserver` object.
-  - returns: <[boolean][boolean-mdn-url]> If `true`, the polling stops.
-- returns: <[PollingObserver]> `PollingObserver` object.
+  - `observer` <[PollingObserver]&lt;`T`&gt;> Created [PollingObserver] object.
+  - returns: <[boolean][boolean-mdn-url]> If `true`, the polling stops. Returning `false` will result in an infinite polling as the condition will never meet.
+- returns: <[PollingObserver]&lt;`T`&gt;> [PollingObserver] object.
 
 #### Methods
 
@@ -288,14 +288,14 @@ interface PollingMeasure {
 The method is used to initiate the polling with a polling callback and optional configuration.
 
 - `callback` <[Function][function-mdn-url]> Callback to be executed in each polling and return the result so that it will be passed as the first argument in `conditionCallback`.
-  - returns: <`T` | [Promise][promise-mdn-url]&lt;T&gt;> Return data in the type of `T` or `Promise<T>` in each polling.
+  - returns: <`T` | [Promise][promise-mdn-url]&lt;`T`&gt;> Return polling result in the type of `T` or `Promise<T>` in each polling.
 - `options` <[Object][object-mdn-url]> Optional configuration to run the polling.
   - `interval` <[number][number-mdn-url]> Optional interval in milliseconds. This determines how long each polling should run for.
   - `timeout` <[number][number-mdn-url]> Optional timeout in milliseconds. Polling will end when it reaches the defined timeout even though the condition has not been met yet. _As long as `timeout` is not a number or it has a value that is less than 1, it indicates an infinite polling. The polling needs to be stopped manually by calling [PollingObserver.disconnect()] method._
 
 ##### PollingObserver.disconnect()
 
-Once a `PollingObserver` disconnects, the polling stops. It can also be used to force stop an infinite polling. Once a `PollingObserver` disconnects, all polling metrics will be cleared so calling `PollingObserver.takeRecords` will always return an empty list. `onfinish` event handler is needed to retrieve all polling metrics after disconnection.
+Once a `PollingObserver` disconnects, the polling stops. It can also be used to force stop an infinite polling. Once a `PollingObserver` disconnects, all polling metrics will be cleared so calling [PollingObserver.takeRecords()] will always return an empty list. `onfinish` event handler is needed to retrieve all polling metrics after disconnection.
 
 ##### PollingObserver.takeRecords()
 
@@ -338,9 +338,11 @@ _Coming soon._
 [window.performance]: https://developer.mozilla.org/en-US/docs/Web/API/Performance/now
 
 [PollingObserver]: #pollingobservert
+[PollingObserver.observe()]: #pollingobserverobservecallback-options
+[PollingObserver.disconnect()]: #pollingobserverdisconnect
+[PollingObserver.takeRecords()]: #pollingobservertakerecords
 [PollingMeasure]: #pollingmeasure
 [PollingMeasure.toJSON()]: #pollingmeasuretojson
-[PollingObserver.disconnect()]: #pollingobserverdisconnect
 [OnfinishFulfilled&lt;T&gt;]: #onfinishfulfilledt
 [OnfinishRejected]: #onfinishrejected
 
@@ -361,14 +363,14 @@ _Coming soon._
 <!-- Badges -->
 [follow-me-badge]: https://flat.badgen.net/twitter/follow/igarshmyb?icon=twitter
 
-[version-badge]: https://flat.badgen.net/npm/v/polling-observer?icon=npm
-[node-version-badge]: https://flat.badgen.net/npm/node/polling-observer
-[mit-license-badge]: https://flat.badgen.net/npm/license/polling-observer
+[version-badge]: https://flat.badgen.net/npm/v/@reallyland/polling-observer?icon=npm
+[node-version-badge]: https://flat.badgen.net/npm/node/@reallyland/polling-observer
+[mit-license-badge]: https://flat.badgen.net/npm/license/@reallyland/polling-observer
 
-[downloads-badge]: https://flat.badgen.net/npm/dm/polling-observer
-[total-downloads-badge]: https://flat.badgen.net/npm/dt/polling-observer?label=total%20downloads
-[packagephobia-badge]: https://flat.badgen.net/packagephobia/install/polling-observer
-[bundlephobia-badge]: https://flat.badgen.net/bundlephobia/minzip/polling-observer
+[downloads-badge]: https://flat.badgen.net/npm/dm/@reallyland/polling-observer
+[total-downloads-badge]: https://flat.badgen.net/npm/dt/@reallyland/polling-observer?label=total%20downloads
+[packagephobia-badge]: https://flat.badgen.net/packagephobia/install/@reallyland/polling-observer
+[bundlephobia-badge]: https://flat.badgen.net/bundlephobia/minzip/@reallyland/polling-observer
 
 [circleci-badge]: https://flat.badgen.net/circleci/github/reallyland/polling-observer?icon=circleci
 [daviddm-badge]: https://flat.badgen.net/david/dep/reallyland/polling-observer
@@ -382,13 +384,13 @@ _Coming soon._
 <!-- Links -->
 [follow-me-url]: https://twitter.com/igarshmyb?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=reallyland/polling-observer
 
-[version-url]: https://www.npmjs.com/package/polling-observer
+[version-url]: https://www.npmjs.com/package/@reallyland/polling-observer
 [node-version-url]: https://nodejs.org/en/download
 [mit-license-url]: https://github.com/reallyland/polling-observer/blob/master/LICENSE
 
-[downloads-url]: https://www.npmtrends.com/polling-observer
-[packagephobia-url]: https://packagephobia.now.sh/result?p=polling-observer
-[bundlephobia-url]: https://bundlephobia.com/result?p=polling-observer
+[downloads-url]: https://www.npmtrends.com/@reallyland/polling-observer
+[packagephobia-url]: https://packagephobia.now.sh/result?p=%40reallyland%2Fpolling-observer
+[bundlephobia-url]: https://bundlephobia.com/result?p=@reallyland/polling-observer
 
 [circleci-url]: https://circleci.com/gh/reallyland/polling-observer/tree/master
 [daviddm-url]: https://david-dm.org/reallyland/polling-observer

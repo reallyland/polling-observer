@@ -1,5 +1,5 @@
 <div align="center" style="text-align: center;">
-  <h1 style="border-bottom: none;">polling-observer</h1>
+  <h1 style="border-bottom: none;">@reallyland/polling-observer</h1>
 
   <p>A new way of running polling function with observer pattern</p>
 </div>

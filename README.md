@@ -6,6 +6,8 @@
 
 <hr />
 
+<a href="https://www.buymeacoffee.com/RLmMhgXFb" target="_blank" rel="noopener noreferrer"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 20px !important;width: auto !important;" ></a>
+[![tippin.me][tippin-me-badge]][tippin-me-url]
 [![Follow me][follow-me-badge]][follow-me-url]
 
 [![Version][version-badge]][version-url]
@@ -38,6 +40,9 @@
   - [Usage](#usage)
     - [TypeScript or native ES Modules](#typescript-or-native-es-modules)
     - [Node.js](#nodejs-1)
+  - [Browser](#browser-1)
+    - [ES Modules](#es-modules)
+    - [IIFE](#iife)
 - [API Reference](#api-reference)
   - [OnfinishFulfilled&lt;T&gt;](#onfinishfulfilledlttgt)
   - [OnfinishRejected](#onfinishrejected)
@@ -228,6 +233,39 @@ obs.onfinish = (data, entries/**, observer */) => {
 };
 ```
 
+### Browser
+
+#### ES Modules
+
+```html
+<!doctype html>
+<html>
+  <head>
+    <script type="module">
+      import { PollingObserver } from 'https://unpkg.com/@reallyland/polling-observer@latest/dist/polling-observer.min.js';
+
+      // --snip
+    </script>
+  </head>
+</html>
+```
+
+#### IIFE
+
+```html
+<!doctype html>
+<html>
+  <head>
+    <script src="https://unpkg.com/@reallyland/polling-observer@latest/dist/polling-observer.iife.min.js"></script>
+    <script>
+      var { PollingObserver } = window.PollingObserver;
+
+      // --snip
+    </script>
+  </head>
+</html>
+```
+
 ## API Reference
 
 ### OnfinishFulfilled&lt;T&gt;
@@ -262,7 +300,7 @@ interface PollingMeasure {
 - `duration` <[number][number-mdn-url]> Duration of the polling takes in milliseconds.
 - `entryType` <[string][string-mdn-url]> Entry type, defaults to `polling-measure`.
 - `name` <[string][string-mdn-url]> Polling name in the format of `polling:<index>` where `<index>` starts from `0` and increments on each polling.
-- `startTime` <[string][string-mdn-url]> Relative timestamp indicates when the polling starts at in milliseconds.
+- `startTime` <[string][string-mdn-url]> Relative timestamp (in milliseconds ) indicates when the polling starts at.
 
 #### Methods
 
@@ -276,7 +314,7 @@ interface PollingMeasure {
 
 - `conditionCallback` <[Function][function-mdn-url]> Condition callback to be executed in each polling and return the condition result in the type of boolean, e.g. return `true` to stop next poll.
   - `data` <`T`> Polling data returned by `callback` in the type of `T` which defined in the [PollingObserver.observe()] method.
-  - `entries` <[PollingMeasure]> [PollingMeasure] object encapsulates a single polling metric of each polling.
+  - `entries` <[Array][array-mdn-url]&lt;[PollingMeasure]&gt;> A list of [PollingMeasure] objects.
   - `observer` <[PollingObserver]&lt;`T`&gt;> Created [PollingObserver] object.
   - returns: <[boolean][boolean-mdn-url]> If `true`, the polling stops. Returning `false` will result in an infinite polling as the condition will never meet.
 - returns: <[PollingObserver]&lt;`T`&gt;> [PollingObserver] object.
@@ -285,21 +323,23 @@ interface PollingMeasure {
 
 ##### PollingObserver.observe(callback[, options])
 
-The method is used to initiate the polling with a polling callback and optional configuration.
+The method is used to initiate polling with a polling callback and optional configuration.
 
 - `callback` <[Function][function-mdn-url]> Callback to be executed in each polling and return the result so that it will be passed as the first argument in `conditionCallback`.
   - returns: <`T` | [Promise][promise-mdn-url]&lt;`T`&gt;> Return polling result in the type of `T` or `Promise<T>` in each polling.
 - `options` <[Object][object-mdn-url]> Optional configuration to run the polling.
-  - `interval` <[number][number-mdn-url]> Optional interval in milliseconds. This determines how long each polling should run for.
-  - `timeout` <[number][number-mdn-url]> Optional timeout in milliseconds. Polling will end when it reaches the defined timeout even though the condition has not been met yet. _As long as `timeout` is not a number or it has a value that is less than 1, it indicates an infinite polling. The polling needs to be stopped manually by calling [PollingObserver.disconnect()] method._
+  - `interval` <[number][number-mdn-url]> Optional interval in milliseconds. This is the minimum delay before starting the next polling.
+  - `timeout` <[number][number-mdn-url]> Optional timeout in milliseconds. Polling ends when it reaches the defined timeout even though the condition has not been met yet. _As long as `timeout` is not a number or it has a value that is less than 1, it indicates an infinite polling. The polling needs to be stopped manually by calling [PollingObserver.disconnect()] method._
 
 ##### PollingObserver.disconnect()
 
-Once a `PollingObserver` disconnects, the polling stops. It can also be used to force stop an infinite polling. Once a `PollingObserver` disconnects, all polling metrics will be cleared so calling [PollingObserver.takeRecords()] will always return an empty list. `onfinish` event handler is needed to retrieve all polling metrics after disconnection.
+Once a `PollingObserver` disconnects, the polling stops and all polling metrics will be cleared. Calling [PollingObserver.takeRecords()] after the disconnection will always return an empty record.
+
+A `onfinish` event handler can be used to retrieve polling records after a disconnection but it has to be attached before disconnecting the observer.
 
 ##### PollingObserver.takeRecords()
 
-The method returns a list of polling metrics in the form of [PollingMeasure]. Calling [PollingMeasure.toJSON()] on each entry item to return a list of JSON representation of polling entries.
+The method returns a list of [PollingMeasure] object containing the metrics of each polling.
 
 - returns: <[Array][array-mdn-url]&lt;[PollingMeasure]&gt;> A list of [PollingMeasure] objects.
 
@@ -309,11 +349,11 @@ The method returns a list of polling metrics in the form of [PollingMeasure]. Ca
 
 _Note that no `finish` event fires when the polling finishes. So `observer.addEventListener('finish', ...)` will not work._
 
-Event handler for when a polling finishes. It can either fulfills with a value or rejects with a reason. Both kind of results contains a `status` field to tell the state of the finished polling.
+Event handler for when a polling finishes. When a polling finishes, it can either be fulfilled with a `value` or rejected with a `reason`. Any one of which contains a `status` field to tell the state of the finished polling.
 
-When a polling fulfills, it returns a [OnfinishFulfilled&lt;T&gt;] object with `status` set to `finish` or `timeout` and a `value` in the type of `T`.
+When a polling fulfills, it returns an [OnfinishFulfilled&lt;T&gt;] object with `status` set to `finish` or `timeout` and a `value` in the type of `T`.
 
-When a polling rejects, it returns a [OnfinishRejected] object with `status` set to `error` and a `reason` in the type of [Error][error-mdn-url].
+When a polling rejects, it returns an [OnfinishRejected] object with `status` set to `error` and a `reason` in the type of [Error][error-mdn-url].
 
 | Status    | Returns        |
 | --------- | -------------- |
@@ -361,6 +401,7 @@ _Coming soon._
 [error-mdn-url]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
 
 <!-- Badges -->
+[tippin-me-badge]: https://badgen.net/badge/%E2%9A%A1%EF%B8%8Ftippin.me/@igarshmyb/F0918E
 [follow-me-badge]: https://flat.badgen.net/twitter/follow/igarshmyb?icon=twitter
 
 [version-badge]: https://flat.badgen.net/npm/v/@reallyland/polling-observer?icon=npm
@@ -382,6 +423,7 @@ _Coming soon._
 [coc-badge]: https://flat.badgen.net/badge/code%20of/conduct/pink
 
 <!-- Links -->
+[tippin-me-url]: https://tippin.me/@igarshmyb
 [follow-me-url]: https://twitter.com/igarshmyb?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=reallyland/polling-observer
 
 [version-url]: https://www.npmjs.com/package/@reallyland/polling-observer

@@ -82,6 +82,15 @@ $ npm install --save @reallyland/polling-observer
 
 ### Usage
 
+[Performance] API is strictly required before running any polling. To ensure `performance.now` is available globally on Node.js, you can do:
+
+```js
+/** Node.js */
+import { performance } from 'perf_hooks';
+
+global.performance = performance; // or globalThis.performance = performance;
+```
+
 #### TypeScript or native ES Modules
 
 ```ts
@@ -375,6 +384,7 @@ _Coming soon._
 [npm-url]: https://www.npmjs.com
 [node-releases-url]: https://nodejs.org/en/download/releases
 [perf_hooks]: https://nodejs.org/api/perf_hooks.html
+[Performance]: https://developer.mozilla.org/en-US/docs/Web/API/Performance
 [window.performance]: https://developer.mozilla.org/en-US/docs/Web/API/Performance/now
 
 [PollingObserver]: #pollingobservert

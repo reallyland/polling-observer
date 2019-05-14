@@ -1,5 +1,5 @@
-import { hasWindow } from './has-window.js';
+import { hasWindow } from './has-window';
 
 export async function globalPerformance() {
-  return (hasWindow() ? window : await import('perf_hooks')).performance;
+  return (hasWindow() ? window : global as any).performance;
 }

@@ -7,7 +7,7 @@ import typescript from 'rollup-plugin-typescript2';
 
 const isProd = !process.env.ROLLUP_WATCH;
 const input = ['src/polling-observer.ts'];
-const pluginFn = (iife) => [
+const pluginFn = (iife, minify) => [
   isProd && tslint({
     throwError: true,
     configuration: `tslint${isProd ? '.prod' : ''}.json`,
@@ -17,19 +17,19 @@ const pluginFn = (iife) => [
     exclude: isProd ? ['src/(demo|test)/**/*'] : [],
     ...(iife ? { tsconfigOverride: { compilerOptions: { target: 'es5' } } } : {}),
   }),
-  isProd && terser(),
+  isProd && minify && terser(),
   isProd && filesize({ showBrotliSize: true }),
 ];
 
 const multiBuild = [
   {
-    file: 'dist/polling-observer.mjs',
+    file: 'dist/index.mjs',
     format: 'esm',
     sourcemap: true,
     exports: 'named',
   },
   {
-    file: 'dist/polling-observer.js',
+    file: 'dist/index.js',
     format: 'cjs',
     sourcemap: true,
     exports: 'named',
@@ -46,6 +46,14 @@ const multiBuild = [
     format: 'esm',
     sourcemap: true,
   },
-].map(n => ({ input, output: n, plugins: pluginFn('iife' === n.format) }));
+].reduce((p, n) => {
+  const opts = [true, false].map(o => ({
+    input,
+    output: o ? { ...n, file: n.file.replace(/(.+)(\.m?js)$/, '$1.min$2') } : n,
+    plugins: pluginFn('iife' === n.format, o),
+  }));
+
+  return (p.push(...opts), p);
+}, []);
 
 export default multiBuild;

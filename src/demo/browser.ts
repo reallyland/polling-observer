@@ -1,7 +1,4 @@
-import { performance } from 'perf_hooks';
 import { PollingObserver } from '../polling-observer.js';
-
-(global as any).performance = performance;
 
 async function delay(timeout: number = 1) {
   return new Promise(yay => setTimeout(yay, timeout));

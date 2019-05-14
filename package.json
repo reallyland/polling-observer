@@ -35,7 +35,7 @@
     "build": "npm run clean && npm run rollup",
     "build:test": "npm run clean && tsc -p ./tsconfig.test.json",
     "clean": "shx rm -rf dist/",
-    "demo": "node -r esm ./dist/demo",
+    "demo": "node -r esm ./dist/demo/index.js",
     "jest": "jest --config ./.jestrc.json",
     "lint": "tslint --project tsconfig.json --config tslint.prod.json --format stylish",
     "lint:debug": "tslint --project tsconfig.json --config tslint.json --format stylish",

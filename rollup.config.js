@@ -18,13 +18,17 @@ const pluginFn = (format, minify) => [
     ...('iife' === format ? { tsconfigOverride: { compilerOptions: { target: 'es5' } } } : {}),
   }),
   isProd && minify && terser({
+    compress: true,
     mangle: {
+      module: 'esm' === format,
       properties: { regex: /^_/ },
       reserved: ['PollingMeasure', 'PollingObserver'],
       safari10: true,
       toplevel: true,
-      module: 'esm' === format,
     },
+    output: { safari10: true },
+    safari10: true,
+    toplevel: true,
   }),
   isProd && filesize({ showBrotliSize: true }),
 ];
@@ -33,32 +37,35 @@ const multiBuild = [
   {
     file: 'dist/index.mjs',
     format: 'esm',
-    sourcemap: true,
     exports: 'named',
   },
   {
     file: 'dist/index.js',
     format: 'cjs',
-    sourcemap: true,
     exports: 'named',
   },
   {
     file: 'dist/polling-observer.iife.js',
     format: 'iife',
     name: 'PollingObserver',
-    sourcemap: true,
     exports: 'named',
   },
   {
     file: 'dist/polling-observer.js',
     format: 'esm',
-    sourcemap: true,
   },
 ].reduce((p, n) => {
   const opts = [true, false].map(o => ({
     input,
-    output: o ? { ...n, file: n.file.replace(/(.+)(\.m?js)$/, '$1.min$2') } : n,
+    output: {
+      ...n,
+      file: o ? n.file.replace(/(.+)(\.m?js)$/, '$1.min$2') : n.file,
+      sourcemap: true,
+      sourcemapExcludeSources: true,
+    },
+    experimentalOptimizeChunks: true,
     plugins: pluginFn(n.format, o),
+    treeshake: { moduleSifeEffects: false },
   }));
 
   return (p.push(...opts), p);

@@ -5,6 +5,6 @@ export async function delayUntil(delay: number = 0) {
     const delayNum = 'number' === typeof(delay) ? +delay : 0;
 
     if (delayNum < 1) yay();
-    else hasWindow() ? setTimeout(yay) : setImmediate(yay);
+    else hasWindow() ? setTimeout(yay, delay) : setImmediate(yay);
   });
 }

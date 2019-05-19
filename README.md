@@ -43,6 +43,7 @@
   - [Browser](#browser-1)
     - [ES Modules](#es-modules)
     - [UMD](#umd)
+- [Demo](#demo)
 - [API Reference](#api-reference)
   - [OnfinishFulfilled&lt;T&gt;](#onfinishfulfilledlttgt)
   - [OnfinishRejected](#onfinishrejected)
@@ -274,6 +275,10 @@ obs.onfinish = (data, entries/**, observer */) => {
   </head>
 </html>
 ```
+
+## Demo
+
+[![Edit PollingObserver](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/pollingobserver-b269s?fontsize=14)
 
 ## API Reference
 

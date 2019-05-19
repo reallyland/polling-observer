@@ -1,6 +1,6 @@
 {
   "name": "@reallyland/polling-observer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A new way of running polling function with observer pattern",
   "keywords": [
     "node",

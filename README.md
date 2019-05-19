@@ -42,7 +42,7 @@
     - [Node.js](#nodejs-1)
   - [Browser](#browser-1)
     - [ES Modules](#es-modules)
-    - [IIFE](#iife)
+    - [UMD](#umd)
 - [API Reference](#api-reference)
   - [OnfinishFulfilled&lt;T&gt;](#onfinishfulfilledlttgt)
   - [OnfinishRejected](#onfinishrejected)
@@ -259,13 +259,13 @@ obs.onfinish = (data, entries/**, observer */) => {
 </html>
 ```
 
-#### IIFE
+#### UMD
 
 ```html
 <!doctype html>
 <html>
   <head>
-    <script src="https://unpkg.com/@reallyland/polling-observer@latest/dist/polling-observer.iife.min.js"></script>
+    <script src="https://unpkg.com/@reallyland/polling-observer@latest/dist/polling-observer.umd.min.js"></script>
     <script>
       var { PollingObserver } = window.PollingObserver;
 

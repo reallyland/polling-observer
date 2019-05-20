@@ -208,12 +208,11 @@ describe('polling-observer', () => {
       };
 
       const obs = new PollingObserver<MockData>(() => false);
-      const pollingOpts = { interval: 2e3, timeout: 5e3 };
-      const mockData = getMockData();
-
-      obs.observe(pollingFn(mockData), pollingOpts);
+      const pollingOpts = { interval: 1e3, timeout: 3e3 };
 
       await new Promise((yay) => {
+        const mockData = getMockData();
+
         obs.onfinish = (d, records) => {
           const { status, value } = d as OnfinishFulfilled<MockData>;
 
@@ -223,15 +222,15 @@ describe('polling-observer', () => {
           expect(obs.takeRecords().length).toBeGreaterThan(1);
           yay();
         };
+        obs.observe(pollingFn(mockData), pollingOpts);
       });
 
       obs.disconnect();
       expect(obs.takeRecords().length).toBeLessThan(1);
 
-      const mockData2 = getMockData();
-      obs.observe(pollingFn(mockData2), pollingOpts);
-
       await new Promise((yay) => {
+        const mockData2 = getMockData();
+
         obs.onfinish = (d, records) => {
           const { status, value } = d as OnfinishFulfilled<MockData>;
 
@@ -241,6 +240,7 @@ describe('polling-observer', () => {
           expect(obs.takeRecords().length).toBeGreaterThan(1);
           yay();
         };
+        obs.observe(pollingFn(mockData2), pollingOpts);
       });
 
       done();
@@ -356,7 +356,7 @@ describe('polling-observer', () => {
         expect(obs.takeRecords().length).toBeGreaterThan(1);
         done();
       };
-    }, 10e3);
+    }, 8e3);
 
     it(`polls without 'onfinish' callback`, (done) => {
       const data: MockData = { items: [Math.floor(Math.random() * Math.PI)] };
@@ -365,7 +365,7 @@ describe('polling-observer', () => {
       setTimeout(() => {
         expect(obs.takeRecords().length).toBeGreaterThan(1);
         done();
-      }, 5e3);
+      }, 8e3);
 
       obs.observe(() => data, { interval: 2e3, timeout: 5e3 });
 

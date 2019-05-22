@@ -28,7 +28,7 @@
 [![Codacy Badge][codacy-badge]][codacy-url]
 [![Code of Conduct][coc-badge]][coc-url]
 
-> Better greeting message
+> Like PerformanceObserver or any other observer APIs you could find in a browser, but this is for polling. Not only does it run polling with defined parameters but also collect polling metrics for each run until timeout or a defined condition fulfills.
 
 ## Table of contents <!-- omit in toc -->
 
